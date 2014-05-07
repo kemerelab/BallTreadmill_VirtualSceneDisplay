@@ -15,9 +15,9 @@
 ##Install and Run
 
 1. Get the code:  
-  `$ git clone git://github.com/kemerelab/BallTreadmill_VirtualSceneDisplay`  
+  `$ git clone https://github.com/kemerelab/BallTreadmill_VirtualSceneDisplay`  
 2. Set up a group called **vr-users** and add yourself to that group.  
-  ->`$ sudo addgroup vr-users`<-  
+  `$ sudo addgroup vr-users`  
   `$ sudo adduser yourname vr-users`
 3. Copy some **udev** rules to your system (**/etc/udev/rules.d/**): (**_$/_** will refer to the directory where you downloaded the code): **$/linux/etc/udev/rules.d/52-events.rules** will set up r/w permissions for when you connect an input device.
 4. Copy **$/linux/usr/local/bin/findxinput-g500.py** into **/usr/local/bin/**. Make sure they are executable.  
