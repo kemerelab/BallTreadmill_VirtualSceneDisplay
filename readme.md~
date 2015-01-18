@@ -25,7 +25,7 @@
   It is the script for soft detaching the optical mice when the program starts.
 5. `$ ./standalone 1`  
   will print the readout from the first optical mouse to stdout. The _readout_ binary is for communicating with Blender through Unix sockets (Make sure they are executable).
-6. Open the **$/figure8maze.blend**. Link all **$/python scripts/*.py** to it. 
+6. Open the **$/figure 8 maze.blend**. Link all **$/python scripts/*.py** to it. 
 7. Plug in the Arduino Pro chip. Upload **$/Arduino Pro/PyArduino** to the chip.
 8. If everything went right, when you start the game mode (press 'P'), you can use optical mice to navigate the camera in virtual figure 8 maze and LED on Arduino will turn on. And the LED will be off for 2 seconds as soon as the camera enters 2 white areas in the maze alternatively.
 
