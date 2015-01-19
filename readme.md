@@ -23,11 +23,11 @@
 4. Copy **$/linux/usr/local/bin/findxinput.py** into **/usr/local/bin/**. Make sure they are executable.  
   `$ sudo chmod +x findxinput.py`  
   It is the script for soft detaching the optical mice when the program starts.
-5. Copy **xinput.py** somewhere into /usr/lib/pythonX.X/dist-packages/)
+5. Copy **xinput.py** somewhere into **/usr/lib/pythonX.X/dist-packages/**)
 6. `$ ./standalone device_number`  
   will print the readout from the first optical mouse to stdout. The _readout_ binary is for communicating with Blender through Unix sockets (Make sure they are executable).
-7. Open the **$/figure8maze.blend**. Link all **$/python scripts/*.py** to it. 
-8. Plug in the Arduino Pro chip. Upload **$/Arduino Pro/PyArduino** to the chip.
+7. Open the **$/figure8maze.blend**. Link all **$/pythonblender/*.py** to it. 
+8. Plug in the Arduino Pro chip. Upload **$/Arduino/PyArduino** to the chip.
 9. If everything went right, when you start the game mode (press 'P'), you can use optical mice to navigate the camera in virtual figure 8 maze and LED on Arduino will turn on. And the LED will be off for 2 seconds as soon as the camera enters 2 white areas in the maze alternatively.
 
 ##Q&A

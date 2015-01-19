@@ -33,7 +33,7 @@ if init:
     blenderpath = GameLogic.expandPath('//')
 
     
-
+    print('0')
     if len(mice):
         s1, conn1, addr1, p1 = \
             gu.spawn_process("\0mouse0socket", 
@@ -53,9 +53,7 @@ if init:
 
         GameLogic.Object['m1conn'] = conn1
         GameLogic.Object['m2conn'] = conn2
-        print('0')
     else:
-        print('0')
         GameLogic.Object['m1conn'] = None
         GameLogic.Object['m2conn'] = None
 
