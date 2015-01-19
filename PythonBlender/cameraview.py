@@ -53,8 +53,9 @@ if init:
 
         GameLogic.Object['m1conn'] = conn1
         GameLogic.Object['m2conn'] = conn2
-
+        print('0')
     else:
+        print('0')
         GameLogic.Object['m1conn'] = None
         GameLogic.Object['m2conn'] = None
 
