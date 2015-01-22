@@ -1,24 +1,7 @@
-# This program is free software; you can redistribute it and/or
-# modify it under the terms of the GNU General Public License
-# as published by the Free Software Foundation; either version 2
-# of the License, or (at your option) any later version.
-
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-
-# You should have received a copy of the GNU General Public License
-# along with this program; if not, write to the Free Software
-# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
-# Read out mice from Blender
-# (c) C. Schmidt-Hieber, 2013
-
 from __future__ import print_function
 import math as m
 import GameLogic
-# first pass?
+
 try:
     GameLogic.Object
     init = 0
@@ -50,7 +33,7 @@ if init:
     blenderpath = GameLogic.expandPath('//')
 
     
-
+    print('0')
     if len(mice):
         s1, conn1, addr1, p1 = \
             gu.spawn_process("\0mouse0socket", 
@@ -70,7 +53,6 @@ if init:
 
         GameLogic.Object['m1conn'] = conn1
         GameLogic.Object['m2conn'] = conn2
-
     else:
         GameLogic.Object['m1conn'] = None
         GameLogic.Object['m2conn'] = None

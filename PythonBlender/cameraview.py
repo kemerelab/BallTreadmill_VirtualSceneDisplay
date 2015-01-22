@@ -1,5 +1,5 @@
 from __future__ import print_function
-import math as m
+
 import GameLogic
 # first pass?
 try:
@@ -7,6 +7,8 @@ try:
     init = 0
 except:
     init = 1
+
+import math as m
 import numpy as np
 import bpy
 import serial
@@ -19,9 +21,10 @@ if init:
     GameLogic.Object['closed'] = False
 
     loc = bpy.context.active_object
+    
     print("Original Location:",loc.location) 
 
-    GameLogic.setLogicTicRate(100)
+    GameLogic.setLogicTicRate(10)
 
 
     mice = xinput.find_mice(model="Mouse")
@@ -33,7 +36,6 @@ if init:
     blenderpath = GameLogic.expandPath('//')
 
     
-    print('0')
     if len(mice):
         s1, conn1, addr1, p1 = \
             gu.spawn_process("\0mouse0socket", 
@@ -89,11 +91,10 @@ def main():
         t2, dt2, x2, y2 = gu.read32(conn2)
     else:
         t1, dt1, x1, y1 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])
-        t2, dt2, x2, y2 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])
-        
-    
+        t2, dt2, x2, y2 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])   
     # move according to ball readout:
     movement(controller, (x1, y1, x2, y2, t1, t2, dt1, dt2))
+
 # define useMouseLook
 def movement(controller, move):
 
@@ -102,8 +103,6 @@ def movement(controller, move):
     ytranslate = 0
     zrotate = 0
     gain = 1e-3
-
-    # Simple example how the mice could be read out
 
     # y axis front mouse
     if len(move[3]):
@@ -123,9 +122,13 @@ def movement(controller, move):
     obj = controller.owner
     pos = obj.localPosition
     ori = obj.localOrientation
-    print(pos[0],pos[1])
-    pos_n = [ytranslate*m.sin(m.asin(ori[0][2]))+pos[0], -ytranslate*m.cos(m.acos(ori[0][0]))+pos[1]]
-    
+    print(ori)
+    print("current position", "%.2f" % pos[0], "%.2f" % pos[1])
+    #rad = ori[0][2]
+    #rad = ori[0][0]
+
+    pos_n = [ytranslate*ori[0][2]+pos[0], -ytranslate*ori[0][0]+pos[1]]
+    #pos_n = (pos[0], pos[1])
 
     if pos_n[0] >= 37.8 or pos_n[0]<=-37.8:
 	    print('wall')

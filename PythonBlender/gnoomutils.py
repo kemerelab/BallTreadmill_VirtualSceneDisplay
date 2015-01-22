@@ -56,6 +56,7 @@ def recv_ready(conn):
        try:
           data = conn.recv(1024)
           datadec = data.decode('latin-1')
+
        except:
           if time.time()-start > 5000:
               return False
@@ -93,5 +94,6 @@ def spawn_process(procname, cmd='', shell=False, system=False, start=True, adden
         proc=None
     s.listen(1)
     conn, addr = s.accept()
+    print("proc", proc)
     return s, conn, addr, proc
 
