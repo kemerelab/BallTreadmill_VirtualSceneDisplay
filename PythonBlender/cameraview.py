@@ -8,7 +8,7 @@ try:
 except:
     init = 1
 
-import math as m
+import math
 import numpy as np
 import bpy
 import serial
@@ -24,7 +24,7 @@ if init:
     
     print("Original Location:",loc.location) 
 
-    GameLogic.setLogicTicRate(10)
+    GameLogic.setLogicTicRate(20)
 
 
     mice = xinput.find_mice(model="Mouse")
@@ -110,9 +110,16 @@ def movement(controller, move):
         ytranslate = float(move[3].sum()) * gain  #forward distance
     # x axis front mouse / side mouse
     if len(move[0]) and len(move[2]):
-        # pass
-        zrotate = float(move[0].sum()+move[2].sum())/2.0 * gain
-        z = float(move[0].sum()+move[2].sum())
+        z1 = abs(float(move[2].sum()))
+        z2 = abs(float(move[0].sum()))
+        d = z1 - z2
+        if z1 >= z2:
+            zrotate = float(move[2].sum()) * gain
+        else:
+            zrotate = float(move[0].sum()) * gain
+        print("rotate", "%.2f" % zrotate)
+        zrotate = 0.14*zrotate
+        
 
     # Get the actuators
     act_xtranslate = controller.actuators[0]
@@ -122,13 +129,12 @@ def movement(controller, move):
     obj = controller.owner
     pos = obj.localPosition
     ori = obj.localOrientation
-    print(ori)
-    print("current position", "%.2f" % pos[0], "%.2f" % pos[1])
-    #rad = ori[0][2]
-    #rad = ori[0][0]
+
+    print("current position", "%.2f" % pos[0], "%.2f" % pos[1], "%.2f" % ori[0][0])
+    
 
     pos_n = [ytranslate*ori[0][2]+pos[0], -ytranslate*ori[0][0]+pos[1]]
-    #pos_n = (pos[0], pos[1])
+    
 
     if pos_n[0] >= 37.8 or pos_n[0]<=-37.8:
 	    print('wall')
@@ -145,6 +151,7 @@ def movement(controller, move):
     
     act_ytranslate.dLoc = [0, 0, ytranslate]
     act_ytranslate.useLocalDLoc = True
+    
     act_zrotate.dRot = [0.0, 0.0, zrotate]
     act_zrotate.useLocalDRot = False
     controller.activate(act_zrotate)

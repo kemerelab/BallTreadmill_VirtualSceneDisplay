@@ -44,6 +44,7 @@ def read32(conn):
         dt = datanp[1::4]
         y = datanp[2::4]
         x = datanp[3::4]
+
     else:
         t, dt, x, y = np.array([time.time()]),np.array([0]),np.array([0]),np.array([0])
 
@@ -87,6 +88,7 @@ def spawn_process(procname, cmd='', shell=False, system=False, start=True, adden
     if start:
         if not system:
             proc = subprocess.Popen(cmd, shell=shell, bufsize=-1, env=env)
+            print(cmd)
         else:
             print("BLENDER: Executing", cmd)
             proc = os.system(" ".join(cmd))
