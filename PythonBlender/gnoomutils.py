@@ -88,7 +88,6 @@ def spawn_process(procname, cmd='', shell=False, system=False, start=True, adden
     if start:
         if not system:
             proc = subprocess.Popen(cmd, shell=shell, bufsize=-1, env=env)
-            print(cmd)
         else:
             print("BLENDER: Executing", cmd)
             proc = os.system(" ".join(cmd))
@@ -96,6 +95,5 @@ def spawn_process(procname, cmd='', shell=False, system=False, start=True, adden
         proc=None
     s.listen(1)
     conn, addr = s.accept()
-    print("proc", proc)
     return s, conn, addr, proc
 

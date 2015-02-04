@@ -14,6 +14,12 @@ import bpy
 import serial
 import xinput
 import gnoomutils as gu
+# [1.8 0.85]
+x_out = 1.85
+y_out = 0.92
+x1_in = 1.75
+x2_in = 0.05
+y_in = 0.83
 
 if init:
     GameLogic.Object = {}
@@ -74,12 +80,12 @@ def main():
     obj = controller.owner
     pos = obj.localPosition
     ori = obj.localOrientation
+    
+    arduino = serial.Serial('/dev/arduino_ethernet', 9600)
 
-    arduino = serial.Serial('/dev/ttyACM0', 9600)
-
-    if 34.2 <= pos[0] <= 37.8 and 16.2 <= pos[1] <= 18.8:
+    if x1_in <= pos[0] <= x_out and y_in <= pos[1] <= y_out:
         arduino.write(b'A')
-    elif -34.2 >= pos[0] >= -37.8 and -16.2 >= pos[1] >= -18.8:
+    elif -x1_in >= pos[0] >= -x_out and -y_in >= pos[1] >= -y_out:
         arduino.write(b'B')
     else:
         arduino.write(b'L')    
@@ -94,7 +100,6 @@ def main():
         t2, dt2, x2, y2 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])   
     # move according to ball readout:
     movement(controller, (x1, y1, x2, y2, t1, t2, dt1, dt2))
-
 # define useMouseLook
 def movement(controller, move):
 
@@ -108,19 +113,21 @@ def movement(controller, move):
     if len(move[3]):
         # pass
         ytranslate = float(move[3].sum()) * gain  #forward distance
+        ytranslate = ytranslate*2.54/100
     # x axis front mouse / side mouse
     if len(move[0]) and len(move[2]):
         z1 = abs(float(move[2].sum()))
         z2 = abs(float(move[0].sum()))
         d = z1 - z2
         if z1 >= z2:
-            zrotate = float(move[2].sum()) * gain
+            zr = float(move[2].sum()) * gain
         else:
-            zrotate = float(move[0].sum()) * gain
-        print("rotate", "%.2f" % zrotate)
-        zrotate = 0.14*zrotate
+            zr = float(move[0].sum()) * gain
         
-
+        #zt = zt + zrotate
+        zrotate = 0.14*zr
+        
+    print("rotate", "%.3f" % zrotate, "translate", "%.3f" % ytranslate)
     # Get the actuators
     act_xtranslate = controller.actuators[0]
     act_ytranslate = controller.actuators[1]
@@ -130,22 +137,20 @@ def movement(controller, move):
     pos = obj.localPosition
     ori = obj.localOrientation
 
-    print("current position", "%.2f" % pos[0], "%.2f" % pos[1], "%.2f" % ori[0][0])
-    
+    print("current position", "%.3f" % pos[0], "%.3f" % pos[1], "%.3f" % ori[0][0])
 
     pos_n = [ytranslate*ori[0][2]+pos[0], -ytranslate*ori[0][0]+pos[1]]
     
-
-    if pos_n[0] >= 37.8 or pos_n[0]<=-37.8:
+    if pos_n[0] >= x_out or pos_n[0]<=-x_out:
 	    print('wall')
 	    ytranslate = 0
-    elif pos_n[1] >= 18.8 or pos_n[1] <= -18.8:
+    elif pos_n[1] >= y_out or pos_n[1] <= -y_out:
 	    print('wall')
 	    ytranslate = 0
-    elif -1.8 >= pos_n[0] >= -34.2 and 16.2 >= pos_n[1] >= -16.2:
+    elif -x2_in >= pos_n[0] >= -x1_in and y_in >= pos_n[1] >= -y_in:
 	    print('wall')
 	    ytranslate = 0
-    elif 34.2 >= pos_n[0] >= 1.8 and 16.2 >= pos_n[1] >= -16.2:
+    elif x1_in >= pos_n[0] >= x2_in and y_in >= pos_n[1] >= -y_in:
 	    print('wall')
 	    ytranslate = 0
     
