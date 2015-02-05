@@ -30,7 +30,7 @@ if init:
     
     print("Original Location:",loc.location) 
 
-    GameLogic.setLogicTicRate(20)
+    GameLogic.setLogicTicRate(200)
 
 
     mice = xinput.find_mice(model="Mouse")
@@ -68,7 +68,7 @@ if init:
 conn1 = GameLogic.Object['m1conn']
 conn2 = GameLogic.Object['m2conn']
 
-
+arduino = serial.Serial('/dev/arduino_ethernet', 9600)
 # define main program
 def main():
     if GameLogic.Object['closed']:
@@ -81,7 +81,7 @@ def main():
     pos = obj.localPosition
     ori = obj.localOrientation
     
-    arduino = serial.Serial('/dev/arduino_ethernet', 9600)
+    
 
     if x1_in <= pos[0] <= x_out and y_in <= pos[1] <= y_out:
         arduino.write(b'A')
@@ -95,6 +95,7 @@ def main():
         t1, dt1, x1, y1 = gu.read32(conn1)
         #print(gu.read32(conn1))
         t2, dt2, x2, y2 = gu.read32(conn2)
+        print(x1)
     else:
         t1, dt1, x1, y1 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])
         t2, dt2, x2, y2 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])   
@@ -107,25 +108,16 @@ def movement(controller, move):
     xtranslate = 0
     ytranslate = 0
     zrotate = 0
-    gain = 1e-3
-
+    gain = 1/1000
     # y axis front mouse
     if len(move[3]):
         # pass
         ytranslate = float(move[3].sum()) * gain  #forward distance
         ytranslate = ytranslate*2.54/100
     # x axis front mouse / side mouse
-    if len(move[0]) and len(move[2]):
-        z1 = abs(float(move[2].sum()))
-        z2 = abs(float(move[0].sum()))
-        d = z1 - z2
-        if z1 >= z2:
-            zr = float(move[2].sum()) * gain
-        else:
-            zr = float(move[0].sum()) * gain
-        
-        #zt = zt + zrotate
-        zrotate = 0.14*zr
+    if len(move[0]) and len(move[2]): #float(move[2].sum()) + 
+        zr = (float(move[0].sum()))* gain
+        zrotate = zr/7
         
     print("rotate", "%.3f" % zrotate, "translate", "%.3f" % ytranslate)
     # Get the actuators
