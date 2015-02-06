@@ -1,7 +1,9 @@
+#object rotation according to z axis of global orientation
+#object translation according to z axis of local orientation
 from __future__ import print_function
 
 import GameLogic
-# first pass?
+
 try:
     GameLogic.Object
     init = 0
@@ -10,7 +12,7 @@ except:
 
 import math
 import numpy as np
-import bpy
+
 import serial
 import xinput
 import gnoomutils as gu
@@ -25,10 +27,6 @@ if init:
     GameLogic.Object = {}
     print("BLENDER: GameLogic object created")
     GameLogic.Object['closed'] = False
-
-    loc = bpy.context.active_object
-    
-    print("Original Location:",loc.location) 
 
     GameLogic.setLogicTicRate(200)
 
@@ -68,7 +66,7 @@ if init:
 conn1 = GameLogic.Object['m1conn']
 conn2 = GameLogic.Object['m2conn']
 
-arduino = serial.Serial('/dev/arduino_ethernet', 9600)
+
 # define main program
 def main():
     if GameLogic.Object['closed']:
@@ -80,50 +78,49 @@ def main():
     obj = controller.owner
     pos = obj.localPosition
     ori = obj.localOrientation
+    try:
+        arduino = serial.Serial('/dev/arduino_ethernet', 9600)
     
+        if x1_in <= pos[0] <= x_out and y_in <= pos[1] <= y_out:
+            arduino.write(b'A')
+        elif -x1_in >= pos[0] >= -x_out and -y_in >= pos[1] >= -y_out:
+            arduino.write(b'B')
+        else:
+            arduino.write(b'L')    
+    except:
+        print("No reward")
     
-
-    if x1_in <= pos[0] <= x_out and y_in <= pos[1] <= y_out:
-        arduino.write(b'A')
-    elif -x1_in >= pos[0] >= -x_out and -y_in >= pos[1] >= -y_out:
-        arduino.write(b'B')
-    else:
-        arduino.write(b'L')    
-
     if conn1 is not None:
         # get mouse movement
         t1, dt1, x1, y1 = gu.read32(conn1)
-        #print(gu.read32(conn1))
         t2, dt2, x2, y2 = gu.read32(conn2)
-        print(x1)
     else:
         t1, dt1, x1, y1 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])
         t2, dt2, x2, y2 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])   
     # move according to ball readout:
     movement(controller, (x1, y1, x2, y2, t1, t2, dt1, dt2))
-# define useMouseLook
+
 def movement(controller, move):
 
     # Note that x is mirrored if the dome projection is used.
     xtranslate = 0
-    ytranslate = 0
+    ztranslate = 0
     zrotate = 0
     gain = 1/1000
     # y axis front mouse
     if len(move[3]):
         # pass
-        ytranslate = float(move[3].sum()) * gain  #forward distance
-        ytranslate = ytranslate*2.54/100
+        ztranslate = float(move[3].sum()) * gain  #forward distance
+        ztranslate = ztranslate*2.54/100
     # x axis front mouse / side mouse
     if len(move[0]) and len(move[2]): #float(move[2].sum()) + 
         zr = (float(move[0].sum()))* gain
         zrotate = zr/7
         
-    print("rotate", "%.3f" % zrotate, "translate", "%.3f" % ytranslate)
+    print("rotate", "%.3f" % zrotate, "translate", "%.3f" % ztranslate)
     # Get the actuators
-    act_xtranslate = controller.actuators[0]
-    act_ytranslate = controller.actuators[1]
-    act_zrotate    = controller.actuators[2]
+    act_ztranslate = controller.actuators[0]
+    act_zrotate    = controller.actuators[1]
 
     obj = controller.owner
     pos = obj.localPosition
@@ -131,26 +128,28 @@ def movement(controller, move):
 
     print("current position", "%.3f" % pos[0], "%.3f" % pos[1], "%.3f" % ori[0][0])
 
-    pos_n = [ytranslate*ori[0][2]+pos[0], -ytranslate*ori[0][0]+pos[1]]
+    pos_n = [ztranslate*ori[0][2]+pos[0], -ztranslate*ori[0][0]+pos[1]]
     
     if pos_n[0] >= x_out or pos_n[0]<=-x_out:
 	    print('wall')
-	    ytranslate = 0
+	    ztranslate = 0
     elif pos_n[1] >= y_out or pos_n[1] <= -y_out:
 	    print('wall')
-	    ytranslate = 0
+	    ztranslate = 0
     elif -x2_in >= pos_n[0] >= -x1_in and y_in >= pos_n[1] >= -y_in:
 	    print('wall')
-	    ytranslate = 0
+	    ztranslate = 0
     elif x1_in >= pos_n[0] >= x2_in and y_in >= pos_n[1] >= -y_in:
 	    print('wall')
-	    ytranslate = 0
+	    ztranslate = 0
     
-    act_ytranslate.dLoc = [0, 0, ytranslate]
-    act_ytranslate.useLocalDLoc = True
+    act_ztranslate.dLoc = [-ztranslate, 0, 0]
+    act_ztranslate.useLocalDLoc = True
     
     act_zrotate.dRot = [0.0, 0.0, zrotate]
     act_zrotate.useLocalDRot = False
+    
     controller.activate(act_zrotate)
-    controller.activate(act_ytranslate)
+    controller.activate(act_ztranslate)
 main()
+
