@@ -104,52 +104,51 @@ def movement(controller, move):
 
     # Note that x is mirrored if the dome projection is used.
     xtranslate = 0
-    ztranslate = 0
     zrotate = 0
     gain = 1/1000
     # y axis front mouse
     if len(move[3]):
         # pass
-        ztranslate = float(move[3].sum()) * gain  #forward distance
-        ztranslate = ztranslate*2.54/100
+        xtranslate = float(move[3].sum()) * gain  #forward distance
+        xtranslate = xtranslate*2.54/100
     # x axis front mouse / side mouse
     if len(move[0]) and len(move[2]): #float(move[2].sum()) + 
         zr = (float(move[0].sum()))* gain
         zrotate = zr/7
         
-    print("rotate", "%.3f" % zrotate, "translate", "%.3f" % ztranslate)
+    print("rotate", "%.3f" % zrotate, "translate", "%.3f" % xtranslate)
     # Get the actuators
-    act_ztranslate = controller.actuators[0]
+    act_xtranslate = controller.actuators[0]
     act_zrotate    = controller.actuators[1]
 
     obj = controller.owner
     pos = obj.localPosition
     ori = obj.localOrientation
 
-    print("current position", "%.3f" % pos[0], "%.3f" % pos[1], "%.3f" % ori[1][2], "%.3f" % ori[0][2])
+    print("current position", "%.3f" % pos[0], "%.3f" % pos[1], "%.3f" % ori[0][0])
 
-    pos_n = [ztranslate*ori[0][2]+pos[0], ztranslate*ori[1][2]+pos[1]]
+    pos_n = [xtranslate*ori[0][2]+pos[0], -xtranslate*ori[0][0]+pos[1]]
     
     if pos_n[0] >= x_out or pos_n[0]<=-x_out:
 	    print('wall')
-	    ztranslate = 0
+	    xtranslate = 0
     elif pos_n[1] >= y_out or pos_n[1] <= -y_out:
 	    print('wall')
-	    ztranslate = 0
+	    xtranslate = 0
     elif -x2_in >= pos_n[0] >= -x1_in and y_in >= pos_n[1] >= -y_in:
 	    print('wall')
-	    ztranslate = 0
+	    xtranslate = 0
     elif x1_in >= pos_n[0] >= x2_in and y_in >= pos_n[1] >= -y_in:
 	    print('wall')
-	    ztranslate = 0
+	    xtranslate = 0
     
-    act_ztranslate.dLoc = [0, 0, ztranslate]
-    act_ztranslate.useLocalDLoc = True
+    act_xtranslate.dLoc = [-xtranslate, 0, 0]
+    act_xtranslate.useLocalDLoc = True
     
     act_zrotate.dRot = [0.0, 0.0, zrotate]
     act_zrotate.useLocalDRot = False
     
     controller.activate(act_zrotate)
-    controller.activate(act_ztranslate)
+    controller.activate(act_xtranslate)
 main()
 
