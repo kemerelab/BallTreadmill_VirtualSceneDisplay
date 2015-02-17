@@ -217,7 +217,7 @@ int main (int argc, char **argv)
 
         iSelRet = select(fd_dev + 1, &fds, NULL, NULL, &tv);
         tv.tv_sec  = 0;
-        tv.tv_usec = 50000;
+        tv.tv_usec = 5000;
 
         has_data = false;
 

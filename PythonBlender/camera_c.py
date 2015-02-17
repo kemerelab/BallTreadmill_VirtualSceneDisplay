@@ -1,21 +1,22 @@
 #object rotation according to z axis of global orientation
 #object translation according to z axis of local orientation
 from __future__ import print_function
+from dropbox.datastore import DatastoreManager, Date, DatastoreError
+
+import math
+import dao
+import numpy as np
+import serial
+import xinput
+import gnoomutils as gu
 
 import GameLogic
-
 try:
     GameLogic.Object
     init = 0
 except:
     init = 1
 
-import math
-import numpy as np
-
-import serial
-import xinput
-import gnoomutils as gu
 # [1.8 0.85]
 x_out = 1.85
 y_out = 0.92
@@ -27,20 +28,34 @@ if init:
     GameLogic.Object = {}
     print("BLENDER: GameLogic object created")
     GameLogic.Object['closed'] = False
+    GameLogic.setLogicTicRate(1)
+    
+    dropboxdao = dao.DropboxAccess()
+    manager = DatastoreManager(dropboxdao.api_client)
+    datastore = manager.open_default_datastore()
 
-    GameLogic.setLogicTicRate(200)
+    manager_table = datastore.get_table('manager')
+    l = len(manager_table.query())
+    try:
+        manager_table.insert(id = l+1, taskname='figure 8 maze', completed=False)
+        datastore.commit()
+    except DatastoreConflictError:
+        datastore.rollback()    # roll back local changes
+        datastore.load_deltas() # load new changes from Dropbox
 
-
+    datastore.commit()
+        
     mice = xinput.find_mice(model="Mouse")
     m = [mice[0],mice[1]]
+    
     for mouse in m:
         xinput.set_owner(mouse) # Don't need this if using correct udev rule
         xinput.switch_mode(mouse)
 
     blenderpath = GameLogic.expandPath('//')
-
     
     if len(mice):
+        
         s1, conn1, addr1, p1 = \
             gu.spawn_process("\0mouse0socket", 
                           ['%s/evread/readout' % blenderpath, '%d' % mice[0].evno, '0'])
@@ -65,22 +80,24 @@ if init:
 
 conn1 = GameLogic.Object['m1conn']
 conn2 = GameLogic.Object['m2conn']
-
-
+try:
+    arduino = serial.Serial('/dev/arduino_ethernet', 9600)
+except:
+    print("No reward")
 # define main program
 def main():
     if GameLogic.Object['closed']:
         return
     # get controller
+    
     controller = GameLogic.getCurrentController()
     gu.keep_conn([conn1, conn2])
-    
+
     obj = controller.owner
     pos = obj.localPosition
     ori = obj.localOrientation
+
     try:
-        arduino = serial.Serial('/dev/arduino_ethernet', 9600)
-    
         if x1_in <= pos[0] <= x_out and y_in <= pos[1] <= y_out:
             arduino.write(b'A')
         elif -x1_in >= pos[0] >= -x_out and -y_in >= pos[1] >= -y_out:
