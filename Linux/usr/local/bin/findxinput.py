@@ -9,4 +9,3 @@ if __name__ == "__main__":
 
     for mouse in xi.find_mice(model="Mouse"):
         xi.switch_mode(mouse, on)
-        # xi.set_owner(mouse) Taken care of by udev rule

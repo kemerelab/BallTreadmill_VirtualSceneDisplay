@@ -1,3 +1,4 @@
+from dropbox.datastore import DatastoreManager, Date, DatastoreError
 import cmd
 import locale
 import os
@@ -51,6 +52,76 @@ class DropboxAccess():
             with open(self.TOKEN_FILE, 'w') as f:
                 f.write('oauth2:' + access_token)
             self.api_client = client.DropboxClient(access_token)
+    
+    def do_logout(self):
+        """log out of the current Dropbox account"""
+        self.api_client = None
+        os.unlink(self.TOKEN_FILE)
+        self.current_path = ''
+ 
+    
+    def do_datastore(self):
+        """show"""
+        manager = DatastoreManager(self.api_client)
+        datastore = manager.open_default_datastore()
+        tasks_table = datastore.get_table('manager')
+        tasks = tasks_table.query()
+        l = len(tasks)
+        print(l)
+        for task in tasks:
+            print (task.get('taskname'))
+    
+    def update_task(self, name):
+        """update task"""
+        manager = DatastoreManager(self.api_client)
+        datastore = manager.open_default_datastore()
+        tasks_table = datastore.get_table('task')
+        tasks = tasks_table.query(taskname = name)
+        
+        if not tasks:
+            print("add new task")
+            l = len(tasks_table.query())
+            try:
+                tasks_table.insert(id = l+1, taskname=name, completed=False)
+                datastore.commit()
+            except DatastoreConflictError:
+                datastore.rollback()    # roll back local changes
+                datastore.load_deltas() # load new changes from Dropbox
+
+    def do_help(self):
+        # Find every "do_" attribute with a non-empty docstring and print
+        # out the docstring.
+        all_names = dir(self)
+        cmd_names = []
+        for name in all_names:
+            if name[:3] == 'do_':
+                cmd_names.append(name[3:])
+        cmd_names.sort()
+        for cmd_name in cmd_names:
+            f = getattr(self, 'do_' + cmd_name)
+            if f.__doc__:
+                self.stdout.write('%s: %s\n' % (cmd_name, f.__doc__))
+ 
+
+    def do_exit(self):
+        """exit"""
+        return True
+ 
+    # the following are for command line magic and aren't Dropbox-related
+    def emptyline(self):
+        pass
+ 
+    def do_EOF(self, line):
+        self.stdout.write('\n')
+        return True
+ 
+    def parseline(self, line):
+        parts = shlex.split(line)
+        if len(parts) == 0:
+            return None, None, line
+        else:
+            return parts[0], parts[1:], line
+ 
 
 if __name__=="__main__":
     if app_secret == '' or app_key == '':
