@@ -14,8 +14,8 @@ void loop() {
     if (c == 'L') {
       digitalWrite(PUMP, LOW);
       delay(1000);
-    }else{
       digitalWrite(PUMP, HIGH);
+    }
   }
 }
 

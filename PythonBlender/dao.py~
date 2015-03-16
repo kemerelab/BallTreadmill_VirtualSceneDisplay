@@ -1,0 +1,128 @@
+from dropbox.datastore import DatastoreManager, Date, DatastoreError
+import cmd
+import locale
+import os
+import pprint
+import shlex
+import sys
+
+PY3 = sys.version_info[0] == 3
+
+if PY3:
+    from io import StringIO
+else:
+    from StringIO import StringIO
+
+from dropbox import client, rest, session
+
+app_key = 'x41qnsve1e8gffl'
+app_secret = 'o42m6t2emjq8kqc'
+
+class DropboxAccess():
+    TOKEN_FILE = "token_store.txt"
+
+    def __init__(self):
+        self.app_key = app_key
+        self.app_secret = app_secret
+        self.current_path = ''
+        self.api_client = None
+        try:
+            serialized_token = open(self.TOKEN_FILE).read()
+            if serialized_token.startswith('oauth2:'):
+                access_token = serialized_token[len('oauth2:'):]
+                self.api_client = client.DropboxClient(access_token)
+                print("[loaded OAuth 2 access token]")
+            else:
+                print("Malformed access token in %r." % (self.TOKEN_FILE,))
+                return
+        except:
+            flow = client.DropboxOAuth2FlowNoRedirect(self.app_key, self.app_secret)
+            authorize_url = flow.start()
+            sys.stdout.write("1. Go to: " + authorize_url + "\n")
+            sys.stdout.write("2. Click \"Allow\" (you might have to log in first).\n")
+            sys.stdout.write("3. Copy the authorization code.\n")
+            code = input("Enter the authorization code here: ").strip()
+
+            try:
+                access_token, user_id = flow.finish(code)
+            except rest.ErrorResponse:
+                self.stdout.write('Error: %s\n' % str(e))
+                return
+
+            with open(self.TOKEN_FILE, 'w') as f:
+                f.write('oauth2:' + access_token)
+            self.api_client = client.DropboxClient(access_token)
+        
+        manager = DatastoreManager(self.api_client)
+        self.default_datastore = manager.open_or_create_datastore('reference')
+        self.trajectory_datastore = manager.open_or_create_datastore('trajectory')
+        
+    def update_scene(self, name):
+        """update scene"""
+        scenes_table = self.default_datastore.get_table('scene')
+        scenes = scenes_table.query(scene_name = name)
+        scenes = list(scenes)
+        if not scenes:
+            try:
+                l = len(scenes_table.query())
+                sceneid = l+1
+                scenes_table.insert(id = sceneid, scene_name = name, add_date = Date())
+                self.default_datastore.commit()
+                print("add new scene", sceneid)
+            except DatastoreConflictError:
+                datastore.rollback()    # roll back local changes
+                datastore.load_deltas() # load new changes from Dropbox
+        else:
+            sceneid = scenes[0].get('id')
+        return sceneid
+                         
+    def update_subject(self, name):
+        """update subject"""
+        subjects_table = self.default_datastore.get_table('subject')
+        subjects = subjects_table.query(subject_name = name)
+        subjects = list(subjects)
+        if not subjects:
+            try:
+                l = len(subjects_table.query())
+                subjectid = l+1
+                subjects_table.insert(id = subjectid, subject_name=name, add_date = Date())
+                self.default_datastore.commit()
+                print("add new subject", subjectid)
+            except DatastoreConflictError:
+                datastore.rollback()    # roll back local changes
+                datastore.load_deltas() # load new changes from Dropbox
+        else:
+            subjectid = subjects[0].get('id')
+        return subjectid
+    
+    def insert_trial(self, subjectid, sceneid):
+        """update trial"""
+        trials_table = self.default_datastore.get_table('trial')
+        l = len(trials_table.query())
+        trialid = l+1
+        try:
+            trials_table.insert(id = trialid, subject_id = subjectid, scene_id = sceneid, start_time = Date())
+            self.default_datastore.commit()
+            print("start new trial", trialid)
+            return trialid
+        except DatastoreConflictError:
+            datastore.rollback()    # roll back local changes
+            datastore.load_deltas() # load new changes from Dropbox
+
+
+    def update_trajectory(self, xy):
+        """update trajectory"""
+        trajectory_table = self.default_datastore.get_table('trajectory_trial%s'%)
+        try:
+            subjects_table.insert(subjectname=name, add_date = Date)
+            datastore.commit()
+        except DatastoreConflictError:
+            datastore.rollback()    # roll back local changes
+            datastore.load_deltas() # load new changes from Dropbox
+
+if __name__=="__main__":
+    if app_secret == '' or app_key == '':
+        exit("You need to set your APP_KEY and APP_SECRET!")
+    os.path.dirname(os.path.realpath(__file__))
+    term = DropboxAccess()
+

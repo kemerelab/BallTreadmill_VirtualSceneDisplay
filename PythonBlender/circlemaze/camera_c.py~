@@ -1,0 +1,194 @@
+import math
+import dao
+import numpy as np
+import serial
+import xinput
+import gnoomutils as gu
+import sys
+import time
+import GameLogic
+
+try:
+    GameLogic.Object
+    init = 0
+except:
+    init = 1
+    
+blenderpath = GameLogic.expandPath('//')
+if init:
+    GameLogic.Object = {}
+    print("BLENDER: GameLogic object created")
+    GameLogic.Object['closed'] = False
+     
+    controller = GameLogic.getCurrentController()
+    obj = controller.owner
+    ori = obj.localOrientation
+    pos = obj.localPosition
+    
+    dropboxdao = dao.DropboxAccess()
+    GameLogic.Object['dao'] = dropboxdao
+    trial_file_name = '%s/trial.txt' % blenderpath
+    GameLogic.Object['trial_file'] = trial_file_name
+    
+    
+    if (sys.argv[1] == "-P") or (sys.argv[1] == "-g"):
+        print('develop mode')
+        subject = "test"
+        scene = "test"
+        GameLogic.Object['duration'] = 100.0
+        GameLogic.Object['timestamp'] = 0.1
+    else:
+        subject = sys.argv[1]
+        scene = sys.argv[0]
+        GameLogic.Object['duration'] = float(sys.argv[2])*60
+        GameLogic.Object['timestamp'] = float(sys.argv[3])
+    
+    GameLogic.setLogicTicRate(10)
+    
+    try:
+        dropboxdao.download_file('/trial.txt', trial_file_name)
+        print("downloading existing trials information file")
+    except:
+        print("creating trials information file")
+        with open(trial_file_name, 'w') as f:
+            f.write('id scene subject timestamp duration date\n')
+            f.close()
+    
+    print('add new trial information')
+    
+    with open(trial_file_name) as f:
+        for i, l in enumerate(f):
+            pass
+        num_lines = i + 1
+        
+    with open(trial_file_name, 'a') as f:
+        GameLogic.Object['trialid'] = num_lines
+        add_time = time.time()
+        f.write('%s %s %s %.3f %.3f %s\n' % (str(num_lines), scene, subject, \
+                GameLogic.Object['timestamp'], GameLogic.Object['duration'], add_time))
+    
+    trajectory_file_name = '%s/trajectory_%s.txt' % (blenderpath, str(num_lines))
+    GameLogic.Object['trajectory_file'] = trajectory_file_name
+    
+    with open(trajectory_file_name, 'w') as f:
+        line = '%s %s %s %s\n' % ('x', 'y', 'cosx_x', 'cosy_x')
+        f.write(line)
+        line = '%.3f %.3f %.3f %.3f\n' % (pos[0],pos[1],ori[0][0],ori[1][0])
+        print(line)
+        f.write(line)    
+    
+    mice = xinput.find_mice(model="Mouse")
+    m = [mice[0],mice[1]]
+    for mouse in m:
+        xinput.set_owner(mouse) # Don't need this if using correct udev rule
+        xinput.switch_mode(mouse)
+        
+    if len(mice):   
+        s1, conn1, addr1, p1 = \
+            gu.spawn_process("\0mouse0socket", 
+                          ['%s/evread/readout' % blenderpath, '%d' % mice[0].evno, '0'])
+        s2, conn2, addr2, p2 = \
+            gu.spawn_process("\0mouse1socket", 
+                          ['%s/evread/readout' % blenderpath, '%d' % mice[1].evno, '1'])
+        
+        conn1.send(b'start')
+        conn2.send(b'start')
+        
+        gu.recv_ready(conn1)
+        gu.recv_ready(conn2)
+
+        conn1.setblocking(0)
+        conn2.setblocking(0)
+
+        GameLogic.Object['m1conn'] = conn1
+        GameLogic.Object['m2conn'] = conn2
+        GameLogic.Object['start'] = time.time()
+        GameLogic.Object['last'] = time.time()
+        
+        try:
+            GameLogic.Object['Arduino'] = serial.Serial('/dev/arduino_ethernet', 9600)
+            print("Pump Connected")
+        except:
+            print("Pump not Connected")
+    else:
+        GameLogic.Object['m1conn'] = None
+        GameLogic.Object['m2conn'] = None
+
+dropboxdao = GameLogic.Object['dao']
+conn1 = GameLogic.Object['m1conn']
+conn2 = GameLogic.Object['m2conn']
+trial_id = GameLogic.Object['trialid']
+
+def main():
+    if GameLogic.Object['closed']:
+        return
+    else:
+        proceeding = GameLogic.Object['last'] - GameLogic.Object['start']
+        if proceeding > GameLogic.Object['duration'] - 0.005:
+            GameLogic.Object['closed'] = True
+            print(proceeding)
+            dropboxdao.upload_file(GameLogic.Object['trial_file'], '/trial.txt')
+            dropboxdao.upload_file(GameLogic.Object['trajectory_file'], '/trajectory&event/trajectory_%s.txt'%str(trial_id))
+            GameLogic.endGame()
+
+        gu.keep_conn([conn1, conn2])
+        controller = GameLogic.getCurrentController()
+        obj = controller.owner
+        ori = obj.localOrientation
+        pos = obj.localPosition
+        
+        current_time = time.time()
+        if not GameLogic.Object['closed']:
+            if (current_time - GameLogic.Object['last']) > GameLogic.Object['timestamp'] - 0.005:
+                GameLogic.Object['last'] = current_time
+                with open(GameLogic.Object['trajectory_file'], 'a') as f:
+                    line = '%.3f %.3f %.3f %.3f\n' % (pos[0],pos[1],ori[0][0],ori[1][0])
+                    f.write(line)
+        
+        print(pos,'\n')
+        
+
+        if conn1 is not None:
+            t1, dt1, x1, y1 = gu.read32(conn1)
+            t2, dt2, x2, y2 = gu.read32(conn2)
+        else:
+            t1, dt1, x1, y1 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])
+            t2, dt2, x2, y2 = np.array([0,]), np.array([0,]), np.array([0,]), np.array([0,])
+        
+        movement(controller, (y1, y2, t1, t2, dt1, dt2))
+        
+def movement(controller, move):
+    zrotate = 0
+    gain = 1/1000
+  
+    act_xytranslate = controller.actuators[0]
+    act_zrotate    = controller.actuators[1]
+    
+    act_xytranslate.dLoc = [0.0, 0.0, 0.0]
+    act_xytranslate.useLocalDLoc = False
+    
+    act_zrotate.dRot = [0.0, 0.0, 0.0]
+    act_zrotate.useLocalDRot = False
+
+    obj = controller.owner
+    pos = obj.localPosition
+    ori = obj.localOrientation
+    ori_new = [0,0]
+    pos_new = [0,0]    
+
+    if len(move[0]):
+        z = (float(move[0].sum())-float(move[1].sum())) * gain/2
+        if z > 0:
+            zrotate = z*2.54/50/1.41
+            ori_new[0] = ori[0][0]*math.cos(zrotate) - ori[1][0]*math.sin(zrotate)
+            ori_new[1] = ori[1][0]*math.cos(zrotate) + ori[0][0]*math.sin(zrotate)
+            
+            pos_new[0] = 1.41*ori_new[0]
+            pos_new[1] = 1.41*ori_new[1]
+            act_xytranslate.dLoc = [pos_new[0]-pos[0], pos_new[1]-pos[1], 0.0]
+            act_zrotate.dRot = [0.0, 0.0, zrotate]
+    
+    controller.activate(act_zrotate)
+    controller.activate(act_xytranslate)
+main()
+

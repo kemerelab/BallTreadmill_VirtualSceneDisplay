@@ -1,4 +1,4 @@
-from dropbox.datastore import DatastoreManager, Date, DatastoreError
+
 import cmd
 import locale
 import os
@@ -15,8 +15,8 @@ else:
 
 from dropbox import client, rest, session
 
-app_key = 'x41qnsve1e8gffl'
-app_secret = 'o42m6t2emjq8kqc'
+app_key = '33g92yzpn2tivdk'
+app_secret = 'r95jod5npowzz2n'
 
 class DropboxAccess():
     TOKEN_FILE = "token_store.txt"
@@ -27,6 +27,7 @@ class DropboxAccess():
         self.current_path = ''
         self.api_client = None
         try:
+            print(self.TOKEN_FILE)
             serialized_token = open(self.TOKEN_FILE).read()
             if serialized_token.startswith('oauth2:'):
                 access_token = serialized_token[len('oauth2:'):]
@@ -52,63 +53,25 @@ class DropboxAccess():
             with open(self.TOKEN_FILE, 'w') as f:
                 f.write('oauth2:' + access_token)
             self.api_client = client.DropboxClient(access_token)
-            
+        
+    def upload_file(self, filename, destination):
+        """upload"""
+        f = open(filename, 'rb')
+        self.api_client.put_file(destination, f, True)
+        
+    def download_file(self, filename, destination):
+        """download"""
+        f, metadata = self.api_client.get_file_and_metadata(filename)
+        out = open(destination, 'wb')
+        out.write(f.read())
+        out.close()
     
-    def update_scene(self, name):
-        """update scene"""
-        manager = DatastoreManager(self.api_client)
-        datastore = manager.open_default_datastore()
-        scenes_table = datastore.get_table('scene')
-        scenes = scenes_table.query(scene_name = name)
-        if not scenes:
-            try:
-                l = len(scenes_table.query())
-                sceneid = l+1
-                scenes_table.insert(id = sceneid, scene_name = name, add_date = Date())
-                datastore.commit()
-                print("add new scene", sceneid)
-            except DatastoreConflictError:
-                datastore.rollback()    # roll back local changes
-                datastore.load_deltas() # load new changes from Dropbox
-        else:
-            sceneid = scenes[0].get('id')
-        return sceneid
-                         
-    def update_subject(self, name):
-        """update subject"""
-        manager = DatastoreManager(self.api_client)
-        datastore = manager.open_default_datastore()
-        subjects_table = datastore.get_table('subject')
-        subjects = subjectss_table.query(subject_name = name)
-        if not subjects:
-            print("add new subject")
-            try:
-                l = len(subjects_table.query())
-                subjects_table.insert(id = l+1, subjectname=name, add_date = Date)
-                datastore.commit()
-            except DatastoreConflictError:
-                datastore.rollback()    # roll back local changes
-                datastore.load_deltas() # load new changes from Dropbox
-     
-    def update_trajectory(self, xy):
-        """update trajectory"""
-        manager = DatastoreManager(self.api_client)
-        datastore = manager.open_default_datastore()
-        trajectory_table = datastore.get_table('subject')
-        subjects = subjectss_table.query(scenename = name)
-        if not subjects:
-            print("add new subject")
-            try:
-                l = len(subjects_table.query())
-                subjects_table.insert(id = l+1, subjectname=name, add_date = Date)
-                datastore.commit()
-            except DatastoreConflictError:
-                datastore.rollback()    # roll back local changes
-                datastore.load_deltas() # load new changes from Dropbox
+    def update_file(self, directory, line, mode):
+        with open(directory, mode) as f:
+            f.write(line)
 
 if __name__=="__main__":
     if app_secret == '' or app_key == '':
         exit("You need to set your APP_KEY and APP_SECRET!")
     os.path.dirname(os.path.realpath(__file__))
     term = DropboxAccess()
-
