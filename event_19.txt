@@ -1,7 +1,0 @@
-event time
-start 0.000
-enter 30.966
-exit 31.849
-enter 57.566
-exit 62.699
-end 199.999

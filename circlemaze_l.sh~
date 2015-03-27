@@ -1,0 +1,8 @@
+#! /bin/bash
+
+export DISPLAY=":1.0"
+# some bash code here
+
+./circlemaze_l
+
+# more bash code here
