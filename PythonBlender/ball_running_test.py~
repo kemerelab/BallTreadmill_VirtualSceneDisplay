@@ -8,7 +8,6 @@ import gnoomutils as gu
 import sys
 import time
 
-print(sys.argv)
 mice = xinput.find_mice(model="Mouse")
 m = [mice[0],mice[1]]
 blenderpath = "/home/kemerelab/git/VR_Ball"
@@ -42,7 +41,7 @@ except:
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-    
+    start = 
     while 1 > 0:
         time.sleep(float(sys.argv[1]))
         gu.keep_conn([conn1, conn2])

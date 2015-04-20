@@ -8,6 +8,8 @@ import gnoomutils as gu
 import sys
 import time
 
+#python3 ball_running_test.py
+
 mice = xinput.find_mice(model="Mouse")
 m = [mice[0],mice[1]]
 blenderpath = "/home/kemerelab/git/VR_Ball"
@@ -38,12 +40,14 @@ try:
 except:
     print("Pump not Connected")
 
+duration = float(sys.argv[4])
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv
-    
-    while 1 > 0:
-        time.sleep(float(sys.argv[1]))
+    start = time.time()
+    while time.time() - start < duration:
+        time.sleep(float(sys.argv[2]))
         gu.keep_conn([conn1, conn2])
         if conn1 is not None:
             t1, dt1, x1, y1 = gu.read32(conn1)
@@ -54,12 +58,21 @@ def main(argv=None):
         z = (float(y1.sum())-float(y2.sum()))/2/1000*2.54 # distance
         dt = float(dt1.sum())
         v = z/dt
-        if v > 5:
-            arduino.write(b'L')
-            print(v)
-            time.sleep(float(sys.argv[2]))
-            t1, dt1, x1, y1 = gu.read32(conn1)
-            t2, dt2, x2, y2 = gu.read32(conn2)
+        if v > float(sys.argv[1]):
+            try:
+                arduino.write(b'L')
+            except:
+                print("no pump")
+            print('%.2f'%v, 'cm/s')
+            ct = 0
+            while ct < float(sys.argv[3]):
+                time.sleep(1)
+                ct = ct + 1
+                gu.keep_conn([conn1,conn2])
+                t1, dt1, x1, y1 = gu.read32(conn1)
+                t2, dt2, x2, y2 = gu.read32(conn2)
+            print('Ready for next reward')
+    print("Finished")
 
 if __name__ == "__main__":
     sys.exit(main())

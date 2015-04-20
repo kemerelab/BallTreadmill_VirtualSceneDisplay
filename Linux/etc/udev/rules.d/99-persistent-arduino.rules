@@ -1,1 +1,1 @@
-SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="003b", ATTRS{serial}=="A4131363239351F09012", SYMLINK+="arduino_ethernet"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="003b", ATTRS{serial}=="A4131363239351F09012", SYMLINK+="arduino_ethernet", GROUP="users", MODE="0666"
