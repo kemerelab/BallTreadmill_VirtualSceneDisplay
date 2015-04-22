@@ -63,7 +63,7 @@ def main(argv=None):
                 arduino.write(b'L')
             except:
                 print("no pump")
-            print('%.2f'%v, 'cm/s')
+            print('%.2f'%(time.time()-start), '%.2f'%v, 'cm/s', '%.2f'%dt, 's')
             ct = 0
             while ct < float(sys.argv[3]):
                 time.sleep(1)

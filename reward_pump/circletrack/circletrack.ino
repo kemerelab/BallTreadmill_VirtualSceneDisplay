@@ -13,7 +13,7 @@ void loop() {
     char c = Serial.read();
     if (c == 'L') {
       digitalWrite(PUMP, LOW);
-      delay(1000);
+      delay(500);
       digitalWrite(PUMP, HIGH);
     }
   }
